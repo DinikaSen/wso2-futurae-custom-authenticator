@@ -1,0 +1,10 @@
+{
+    "id": "futurae-idp",
+    "name": "Futurae",
+    "description": "Enable MFA with Futurae.",
+    "image": "assets/images/logos/futurae_logo.jpg",
+    "category": "DEFAULT",
+    "displayOrder": 7,
+    "tags": [ "MFA" ],
+    "type": "identity-provider"
+}

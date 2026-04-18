@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.wso2.custom.identity.outbound.futurae</groupId>
+        <artifactId>wso2-futurae-custom-authenticator</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>org.wso2.custom.authenticator.futurae</artifactId>
+    <packaging>bundle</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>commons-lang.wso2</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.application.authentication.framework</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.application.common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.central.log.mgt</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.extension.identity.authenticator.utils</groupId>
+            <artifactId>org.wso2.carbon.extension.identity.helper</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.wso2.carbon.identity</groupId>
+                    <artifactId>org.wso2.carbon.identity.application.authenticator.oidc</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.wso2.carbon.identity</groupId>
+                    <artifactId>org.wso2.carbon.identity.application.authentication.framework</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.custom.identity.outbound.futurae</groupId>
+            <artifactId>org.wso2.custom.authenticator.futurae.common</artifactId>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>5.1.9</version>
+                <extensions>true</extensions>
+                <dependencies>
+                    <dependency>
+                        <groupId>biz.aQute.bnd</groupId>
+                        <artifactId>biz.aQute.bndlib</artifactId>
+                        <version>5.1.2</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Name>${project.artifactId}</Bundle-Name>
+                        <Private-Package>
+                            org.wso2.custom.authenticator.futurae.internal
+                        </Private-Package>
+                        <Import-Package>
+                            !java.*,
+                            com.google.gson; version="${gson.version}",
+                            com.google.gson.reflect; version="${gson.version}",
+                            org.apache.http.client.config; version="${httpcomponents-httpclient.imp.pkg.version.range}",
+                            org.apache.http.conn; version="${httpcomponents-httpclient.imp.pkg.version.range}",
+                            org.apache.http.impl.conn; version="${httpcomponents-httpclient.imp.pkg.version.range}",
+                            org.wso2.carbon.identity.central.log.mgt.utils; version="${identity.framework.package.import.version.range}",
+                            javax.servlet.http,
+                            org.apache.commons.lang; version="${org.apache.commons.lang.version.range}",
+                            org.apache.commons.logging; version="${commons-logging.osgi.version.range}",
+                            org.apache.http; version="${httpcore.version.osgi.import.range}",
+                            org.apache.http.client.methods; version="${httpcomponents-httpclient.imp.pkg.version.range}",
+                            org.apache.http.entity; version="${httpcore.version.osgi.import.range}",
+                            org.apache.http.impl.client; version="${httpcomponents-httpclient.imp.pkg.version.range}",
+                            org.apache.http.client.utils; version="${httpcomponents-httpclient.imp.pkg.version.range}",
+                            org.apache.http.message; version="${httpcore.version.osgi.import.range}",
+                            org.apache.http.util; version="${httpcore.version.osgi.import.range}",
+                            org.osgi.framework; version="${osgi.framework.imp.pkg.version.range}",
+                            org.osgi.service.component; version="${osgi.service.component.imp.pkg.version.range}",
+                            org.wso2.carbon.identity.application.authentication.framework; version="${identity.framework.package.import.version.range}",
+                            org.wso2.carbon.identity.application.authentication.framework.context; version="${identity.framework.package.import.version.range}",
+                            org.wso2.carbon.identity.application.authentication.framework.exception; version="${identity.framework.package.import.version.range}",
+                            org.wso2.carbon.identity.application.authentication.framework.model; version="${identity.framework.package.import.version.range}",
+                            org.wso2.carbon.identity.application.authentication.framework.config.model; version="${identity.framework.package.import.version.range}",
+                            org.wso2.carbon.identity.application.common.model; version="${identity.framework.package.import.version.range}",
+                            org.wso2.carbon.extension.identity.helper.*; version="${identity.extension.utils.import.version.range}",
+                            org.wso2.carbon.identity.core; version="${identity.framework.package.import.version.range}"
+                        </Import-Package>
+                        <Export-Package>
+                            !org.wso2.custom.authenticator.futurae.internal,
+                            org.wso2.custom.authenticator.futurae.*; version="${project.version}"
+                        </Export-Package>
+                        <DynamicImport-Package>*</DynamicImport-Package>
+                        <_dsannotations-options>version;minimum=1.2;maximum=1.3</_dsannotations-options>
+                        <_removeheaders>Require-Capability</_removeheaders>
+                        <Require-Capability>
+                            osgi.extender;
+                            filter:="(&amp;(osgi.extender=osgi.component)(version>=1.2.0)(!(version>=1.4.0)))"
+                        </Require-Capability>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,251 @@
+{
+    "create": {
+        "image": "assets/images/logos/futurae_logo.jpg",
+        "header": "Futurae",
+        "Subheading": "Enable MFA with Futurae.",
+        "documentation": "{ENV}/asgardeo/docs/guides/authentication/#manage-connections",
+        "modal": {
+            "form": {
+                "fields": [
+                    {
+                        "index": 0,
+                        "ariaLabel": "Futurae IDP Name",
+                        "name": "name",
+                        "label": "Name",
+                        "type": "text",
+                        "required": true,
+                        "placeholder": "Enter a name for the connection.",
+                        "initialValue": "Futurae",
+                        "data-testid": "futurae-idp-create-wizard-page-idp-name",
+                        "maxLength": "50",
+                        "minLength": "3",
+                        "width": "13"
+                    },
+                    {
+                        "index": 1,
+                        "ariaLabel": "Futurae Service Hostname",
+                        "type": "text", 
+                        "name": "serviceHostname",
+                        "label": "Futurae Service Hostname",
+                        "placeholder": "Enter Service Hostname of Futurae.",
+                        "required": true, 
+                        "autoComplete": false,
+                        "data-testid": "futurae-idp-create-wizard-page-idp-hostname",
+                        "maxLength": "100",
+                        "minLength": "3",
+                        "width": "13"
+                    },
+                    {
+                        "index": 2,
+                        "ariaLabel": "Futurae Service Id",
+                        "type": "text", 
+                        "name": "serviceId",
+                        "label": "Futurae Service ID",
+                        "placeholder": "Enter Service ID of Futurae Service.",
+                        "required": true, 
+                        "autoComplete": false,
+                        "data-testid": "futurae-idp-create-wizard-page-idp-service-id",
+                        "maxLength": "100",
+                        "minLength": "3",
+                        "width": "13"
+                    },
+                    {
+                        "index": 3,
+                        "className": "addon-field-wrapper",
+                        "ariaLabel": "Futurae Auth API Token",
+                        "type": "password", 
+                        "name": "authApiToken",
+                        "label": "Futurae Auth API Token",
+                        "placeholder": "Enter Auth API token from Futurae",
+                        "required": true, 
+                        "autoComplete": false,
+                        "testId": "futurae-idp-create-wizard-page-idp-auth-api-token",
+                        "maxLength": "100",
+                        "minLength": "3",
+                        "width": "13"
+                    },
+                    {
+                      "index": 4,
+                      "className": "addon-field-wrapper",
+                      "ariaLabel": "Futurae Admin API Token",
+                      "type": "password",
+                      "name": "adminApiToken",
+                      "label": "Futurae Admin API Token",
+                      "placeholder": "Enter Admin API token from Futurae",
+                      "required": true,
+                      "autoComplete": false,
+                      "testId": "futurae-idp-create-wizard-page-idp-admin-api-token",
+                      "maxLength": "100",
+                      "minLength": "3",
+                      "width": "13"
+                    }
+                ]
+                
+            },
+            "wizardHelp": {
+                "message": {
+                    "header": "Prerequisites",
+                    "paragraphs": [
+                        "Before you begin, create a service in Futurae Admin Portal and obtain required information."
+                    ]
+                },
+                "fields": [
+                    {
+                        "fieldName": "Name",
+                        "hint": "Provide a unique name for the connection."
+                    },
+                    {
+                        "fieldName": "Service Hostname",
+                        "hint": "Provide the <Code class=\"inline-code\">Service Hostname</Code> of Futurae."
+                    },
+                    {
+                        "fieldName": "Service ID",
+                        "hint": "Provide the <Code class=\"inline-code\">Service ID</Code> of your Futurae service."
+                    },
+                    {
+                        "fieldName": "Auth API Key",
+                        "hint": "Provide the <Code class=\"inline-code\">API Token</Code> obtained from Futurae. This will be used to access Futurae's authentication APIs."
+                    },
+                    {
+                      "fieldName": "Admin API Key",
+                      "hint": "Provide the <Code class=\"inline-code\">Admin API Key</Code> obtained from Futurae. This will be used to access Futurae's admin APIs."
+                    }
+                ]
+            }
+        },
+        "properties": [
+            {
+                "key": "serviceHostname",
+                "value": ""
+            },
+            {
+                "key": "serviceId",
+                "value": ""
+            },
+            {
+                "key": "authApiKey",
+                "value": ""
+            },
+            {
+              "key": "adminApiKey",
+              "value": ""
+            }
+        ]
+    },
+    "edit" : {
+        "tabs": {
+            "general" : [
+                {
+                    "index": 0,
+                    "displayOrder" : 1,
+                    "ariaLabel": "name", 
+                    "inputType": "resource_name",
+                    "type": "text",
+                    "name": "name",
+                    "label": "Name",
+                    "required": true ,
+                    "message": "Identity Provider name is required",
+                    "placeholder": "Futurae",
+                    "validation": true,
+                    "value": "",
+                    "maxLength": "50",
+                    "minLength": "3",
+                    "data-testid": "idp-edit-page-general-settings-form-idp-name",
+                    "hint": "Enter a unique name for this connection.",
+                    "readOnly": false
+                },
+                {
+                    "index": 1,
+                    "displayOrder" : 2,
+                    "type": "textarea", 
+                    "name" : "description",
+                    "ariaLabel" : "description",
+                    "label" : "Description",
+                    "required": false,
+                    "placeholder": "Enter a description of the identity provider.",
+                    "value": "",
+                    "data-testid": "idp-edit-page-general-settings-form-idp-description",
+                    "maxLength": "300",
+                    "minLength": "3",
+                    "hint": "A text description of the identity provider.",
+                    "readOnly": false
+                },
+                {
+                    "index": 2,
+                    "displayOrder" : 3,
+                    "name": "jwks_endpoint",
+                    "ariaLabel": "JWKS Endpoint URL",
+                    "inputType": "url",
+                    "type": "text",
+                    "label": "JWKS Endpoint URL",
+                    "required": true,
+                    "placeholder": "https://{ oauth-provider-url }/oauth/jwks",
+                    "value": "",
+                    "data-testid": "",
+                    "maxLength": "2048",
+                    "minLength": "10",
+                    "hint": "A JSON Web Key (JWK) Set is a JSON object that represents a set of JWKs. The JSON object MUST have a keys member, with its value being an array of JWKs.",
+                    "readOnly": false
+                },
+                {
+                    "index": 3,
+                    "displayOrder" : 4,
+                    "type": "certbox",
+                    "isJWKSEnabled": "",
+                    "isReadOnly": "",
+                    "editingIDP": "",
+                    "onUpdate": "",
+                    "isPEMEnabled": ""
+                }
+            ],
+            "settings" : [
+                {
+                    "index": 0,
+                    "displayOrder" : 5,
+                    "label": "Service Hostname",
+                    "data-testid": "idp-edit-page-authenticator-settings-FuturaeAuthenticator-content-form-baseUrl",
+                    "name": "serviceHostname",
+                    "required": true,
+                    "type": "text",
+                    "hint": "Enter the service hostname of the Futurae server.",
+                    "validation": true
+                },
+                {
+                    "index": 1,
+                    "displayOrder" : 6,
+                    "label": "Service ID",
+                    "data-testid": "idp-edit-page-authenticator-settings-FuturaeAuthenticator-content-form-appId",
+                    "name": "serviceId",
+                    "required": true,
+                    "type": "text",
+                    "hint": "Enter the Service ID obtained from Futurae admin portal.",
+                    "validation": false
+                },
+                {
+                    "index": 2,
+                    "displayOrder" : 7,
+                    "label": "Auth API Key",
+                    "data-testid": "idp-edit-page-authenticator-settings-FuturaeAuthenticator-content-form-authKey",
+                    "name": "authApiKey",
+                    "required": true,
+                    "type": "password",
+                    "hint": "Enter the Auth API Key obtained from Futurae admin portal.",
+                    "validation": false
+                },
+                {
+                  "index": 3,
+                  "displayOrder" : 8,
+                  "label": "Admin API Key",
+                  "data-testid": "idp-edit-page-authenticator-settings-FuturaeAuthenticator-content-form-adminKey",
+                  "name": "adminApiKey",
+                  "required": true,
+                  "type": "password",
+                  "hint": "Enter the Admin API Key obtained from Futurae admin portal.",
+                  "validation": false
+                }
+            ],
+            "quickStart": "futurae"
+        }
+        
+    }
+}
