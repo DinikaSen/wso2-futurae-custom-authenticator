@@ -48,7 +48,7 @@ public class FuturaeAuthenticatorConstants {
     public static final String UNENROLL_SUCCESS_2FA = "success_2fa_disabled";
 
     // Authentication status
-    public static final List<String> TERMINATING_STATUSES = Arrays.asList("COMPLETED", "FAILED");
+    public static final List<String> TERMINATING_STATUSES = Arrays.asList("COMPLETED", "FAILED", "FUTURAE_LOGIN_DENIED");
 
     public enum Result {
         allow,
@@ -127,7 +127,7 @@ public class FuturaeAuthenticatorConstants {
         ENROLLMENT_COMPLETED("ENROLLMENT_COMPLETED", "Device enrollment completed successfully. " +
                 "Proceeding to authentication."),
         FUTURAE_LOGIN_DENIED("FUTURAE_LOGIN_DENIED",
-                "Futurae user account is locked or no devices found in Futurae. Contact your administrator."),
+                "Authentication denied from Futurae side. Contact your administrator."),
         FAILED("FAILED", "Authentication failed. Try again.");
 
         private final String name;

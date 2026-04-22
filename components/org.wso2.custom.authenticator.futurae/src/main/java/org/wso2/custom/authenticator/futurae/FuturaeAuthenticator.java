@@ -207,6 +207,10 @@ public class FuturaeAuthenticator extends AbstractApplicationAuthenticator
                 redirectFuturaeLoginPage(response, context, FuturaeAuthenticatorConstants.AuthenticationStatus.FAILED);
                 return AuthenticatorFlowStatus.INCOMPLETE;
 
+            } else if (FuturaeAuthenticatorConstants.AuthenticationStatus.FUTURAE_LOGIN_DENIED.getName().equals(authStatus)) {
+                redirectFuturaeLoginPage(response, context, FuturaeAuthenticatorConstants.AuthenticationStatus.FUTURAE_LOGIN_DENIED);
+                return AuthenticatorFlowStatus.INCOMPLETE;
+
             } else if (FuturaeAuthenticatorConstants.AuthenticationStatus.ENROLLMENT_COMPLETED.getName().equals(authStatus)) {
                 // Device enrolled successfully. Clear enrollment state and begin authentication.
                 completeEnrollmentState(context);
@@ -284,10 +288,13 @@ public class FuturaeAuthenticator extends AbstractApplicationAuthenticator
                         FuturaeAuthenticatorConstants.AuthenticationStatus.FAILED);
             }
         } catch (UserIdNotFoundException e) {
-            throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages.USER_NOT_FOUND, e);
+            LOG.error(FuturaeAuthenticatorConstants.ErrorMessages.USER_NOT_FOUND, e);
+            redirectFuturaeLoginPage(response, context,
+                    FuturaeAuthenticatorConstants.AuthenticationStatus.FAILED);
         } catch (UserStoreException e) {
-            throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.REGISTERED_USER_RETRIEVAL_FAILURE, e);
+            LOG.error(FuturaeAuthenticatorConstants.ErrorMessages.REGISTERED_USER_RETRIEVAL_FAILURE, e);
+            redirectFuturaeLoginPage(response, context,
+                    FuturaeAuthenticatorConstants.AuthenticationStatus.FAILED);
         }
     }
 

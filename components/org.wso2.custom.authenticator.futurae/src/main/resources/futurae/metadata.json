@@ -2,8 +2,8 @@
     "create": {
         "image": "assets/images/logos/futurae_logo.jpg",
         "header": "Futurae",
-        "Subheading": "Enable MFA with Futurae.",
-        "documentation": "https://is.docs.wso2.com/en/latest/guides/authentication/configure-custom-connector/",
+        "Subheading": "Enable MFA for users with Futurae.",
+        "documentation": "",
         "modal": {
             "form": {
                 "fields": [
@@ -54,7 +54,7 @@
                         "className": "addon-field-wrapper",
                         "ariaLabel": "Futurae Auth API Token",
                         "type": "password", 
-                        "name": "authApiToken",
+                        "name": "authApiKey",
                         "label": "Futurae Auth API Token",
                         "placeholder": "Enter Auth API token from Futurae",
                         "required": true, 
@@ -65,7 +65,6 @@
                         "width": "13"
                     }
                 ]
-                
             },
             "wizardHelp": {
                 "message": {
@@ -111,74 +110,10 @@
     },
     "edit" : {
         "tabs": {
-            "general" : [
-                {
-                    "index": 0,
-                    "displayOrder" : 1,
-                    "ariaLabel": "name", 
-                    "inputType": "resource_name",
-                    "type": "text",
-                    "name": "name",
-                    "label": "Name",
-                    "required": true ,
-                    "message": "Identity Provider name is required",
-                    "placeholder": "Futurae",
-                    "validation": true,
-                    "value": "",
-                    "maxLength": "50",
-                    "minLength": "3",
-                    "data-testid": "idp-edit-page-general-settings-form-idp-name",
-                    "hint": "Enter a unique name for this connection.",
-                    "readOnly": false
-                },
-                {
-                    "index": 1,
-                    "displayOrder" : 2,
-                    "type": "textarea", 
-                    "name" : "description",
-                    "ariaLabel" : "description",
-                    "label" : "Description",
-                    "required": false,
-                    "placeholder": "Enter a description of the identity provider.",
-                    "value": "",
-                    "data-testid": "idp-edit-page-general-settings-form-idp-description",
-                    "maxLength": "300",
-                    "minLength": "3",
-                    "hint": "A text description of the identity provider.",
-                    "readOnly": false
-                },
-                {
-                    "index": 2,
-                    "displayOrder" : 3,
-                    "name": "jwks_endpoint",
-                    "ariaLabel": "JWKS Endpoint URL",
-                    "inputType": "url",
-                    "type": "text",
-                    "label": "JWKS Endpoint URL",
-                    "required": true,
-                    "placeholder": "https://{ oauth-provider-url }/oauth/jwks",
-                    "value": "",
-                    "data-testid": "",
-                    "maxLength": "2048",
-                    "minLength": "10",
-                    "hint": "A JSON Web Key (JWK) Set is a JSON object that represents a set of JWKs. The JSON object MUST have a keys member, with its value being an array of JWKs.",
-                    "readOnly": false
-                },
-                {
-                    "index": 3,
-                    "displayOrder" : 4,
-                    "type": "certbox",
-                    "isJWKSEnabled": "",
-                    "isReadOnly": "",
-                    "editingIDP": "",
-                    "onUpdate": "",
-                    "isPEMEnabled": ""
-                }
-            ],
             "settings" : [
                 {
                     "index": 0,
-                    "displayOrder" : 5,
+                    "displayOrder" : 1,
                     "label": "Service Hostname",
                     "data-testid": "idp-edit-page-authenticator-settings-FuturaeAuthenticator-content-form-baseUrl",
                     "name": "serviceHostname",
@@ -189,7 +124,7 @@
                 },
                 {
                     "index": 1,
-                    "displayOrder" : 6,
+                    "displayOrder" : 2,
                     "label": "Service ID",
                     "data-testid": "idp-edit-page-authenticator-settings-FuturaeAuthenticator-content-form-appId",
                     "name": "serviceId",
@@ -200,7 +135,7 @@
                 },
                 {
                     "index": 2,
-                    "displayOrder" : 7,
+                    "displayOrder" : 3,
                     "label": "Auth API Key",
                     "data-testid": "idp-edit-page-authenticator-settings-FuturaeAuthenticator-content-form-authKey",
                     "name": "authApiKey",
@@ -210,8 +145,24 @@
                     "validation": false
                 }
             ],
-            "quickStart": "futurae"
-        }
-        
+            "quickStart": {
+                "heading": "Add Futurae Login",
+                "subHeading": "Futurae is now ready to be used as an MFA option for your applications.",
+                "steps" : [
+                    {
+                        "content": "Choose the application for which you want to set up Futurae MFA.",
+                        "title": "Select Application"
+                    },
+                    {
+                        "content": "Navigate to the <b>Login Flow</b> tab and click on the <b>+</b> icon to add a new step.",
+                        "title": "Add a new step."
+                    },
+                    {
+                        "content": "Click on <b>Add Sign In Option</b> button in step 2 and select the Futurae connection.",
+                        "title": "Configure Futurae as MFA"
+                    }
+                ]
+            }
+        } 
     }
 }

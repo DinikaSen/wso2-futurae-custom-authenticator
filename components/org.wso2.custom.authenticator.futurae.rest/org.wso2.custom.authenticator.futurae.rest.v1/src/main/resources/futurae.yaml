@@ -87,7 +87,7 @@ components:
           format: date-time
         status:
           type: string
-          enum: [ COMPLETED, ENROLLMENT_COMPLETED, PENDING, PENDING_ENROLLMENT, FAILED ]
+          enum: [ COMPLETED, ENROLLMENT_COMPLETED, PENDING, PENDING_ENROLLMENT, FAILED, FUTURAE_LOGIN_DENIED ]
           example: PENDING
 
   #-----------------------------------------------------

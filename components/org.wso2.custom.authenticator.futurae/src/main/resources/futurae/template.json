@@ -1,16 +1,16 @@
 {
     "id": "futurae-idp",
     "name": "Futurae",
-    "description": "Enable MFA with Futurae.",
-    "docLink": "https://is.docs.wso2.com/en/latest/guides/authentication/configure-custom-connector/",
+    "description": "Enable MFA for users with Futurae.",
+    "docLink": "",
     "image": "assets/images/logos/futurae_logo.jpg",
     "category": "DEFAULT",
-    "displayOrder": 6,
+    "displayOrder": 10,
     "services": [],
     "tags": [ "MFA" ],
     "idp": {
         "name": "Futurae",
-        "description": "Enable MFA with Futurae.",
+        "description": "Enable MFA for users with Futurae.",
         "image": "",
         "isPrimary": false,
         "isFederationHub": false,
@@ -18,11 +18,11 @@
         "certificate": {
             "certificates": []
         },
-        "alias": "https://localhost:9444/oauth2/token",
+        "alias": "",
         "idpIssuerName": "",
         "claims": {
             "userIdClaim": {
-                "uri": "http://wso2.org/claims/username"
+                "uri": ""
             },
             "roleClaim": {
                 "uri": "http://wso2.org/claims/role"
@@ -58,10 +58,10 @@
                             "displayName": "Service ID",
                             "description": "Enter the Service ID obtained from Futurae admin portal",
                             "type": "STRING",
-                            "displayOrder": 3,
+                            "displayOrder": 2,
                             "regex": ".*",
                             "isMandatory": true,
-                            "isConfidential": true,
+                            "isConfidential": false,
                             "options": [],
                             "defaultValue": "",
                             "subProperties": []
@@ -71,10 +71,10 @@
                             "displayName": "Auth API Key",
                             "description": "Enter the Auth API Key obtained from Futurae admin portal",
                             "type": "STRING",
-                            "displayOrder": 2,
+                            "displayOrder": 3,
                             "regex": ".*",
                             "isMandatory": true,
-                            "isConfidential": false,
+                            "isConfidential": true,
                             "options": [],
                             "defaultValue": "",
                             "subProperties": []
