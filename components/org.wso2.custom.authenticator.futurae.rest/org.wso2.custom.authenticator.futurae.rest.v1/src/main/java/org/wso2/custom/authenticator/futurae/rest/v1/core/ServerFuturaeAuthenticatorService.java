@@ -1,27 +1,32 @@
 package org.wso2.custom.authenticator.futurae.rest.v1.core;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.custom.authenticator.futurae.common.constants.FuturaeAuthenticatorConstants;
 import org.wso2.custom.authenticator.futurae.common.exception.FuturaeAuthnFailedException;
 import org.wso2.custom.authenticator.futurae.common.model.AuthStateResponse;
+import org.wso2.custom.authenticator.futurae.common.model.EnrollStatusRequest;
+import org.wso2.custom.authenticator.futurae.common.model.EnrollStatusResponse;
 import org.wso2.custom.authenticator.futurae.common.web.FuturaeAuthenticationAPIClient;
 import org.wso2.custom.authenticator.futurae.rest.common.error.APIError;
 import org.wso2.custom.authenticator.futurae.rest.common.error.ErrorResponse;
 import org.wso2.custom.authenticator.futurae.rest.v1.StatusResponse;
 
-
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
 
-//TODO: Validate try catch
 /**
  * The ServerFuturaeAuthenticatorService class contains all the functional tasks handled by the Futurae REST API,
  * such as getting the authentication status of a user provided the session key.
  */
 public class ServerFuturaeAuthenticatorService {
+
+    private static final Log LOG = LogFactory.getLog(ServerFuturaeAuthenticatorService.class);
 
     /**
      * Get the authentication status of the user with the given session key via an API call to the Futurae server.
@@ -38,13 +43,26 @@ public class ServerFuturaeAuthenticatorService {
             // Extract Futurae configurations.
             Map<String, String> futuraeConfigurations = getFuturaeConfigurations(authenticationContext);
 
+            // If the session is in enrollment phase, use the enrollment status endpoint of Futurae.
+            String currentStatus = String.valueOf(
+                    authenticationContext.getProperty(FuturaeAuthenticatorConstants.AUTH_STATUS));
+            if (FuturaeAuthenticatorConstants.AuthenticationStatus.PENDING_ENROLLMENT.getName()
+                    .equals(currentStatus)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Session is in PENDING_ENROLLMENT state. Delegating to enrollment status check.");
+                }
+                return getEnrollmentStatus(authenticationContext, futuraeConfigurations, sessionKey);
+            }
+
             // Extract Futurae authentication properties.
             Map<String, String> futuraeAuthenticationProperties = getFuturaeAuthenticationProperties(authenticationContext);
 
             // If the authentication status property has assigned with one of the terminating status
-            // (i.e. "COMPLETED", "FAILED", "CANCELED"), avoid making API call to the Futurae server.
+            // (i.e. "COMPLETED", "FAILED"), avoid making API call to the Futurae server.
             String previousState = futuraeAuthenticationProperties.get(FuturaeAuthenticatorConstants.AUTH_STATUS);
             if (FuturaeAuthenticatorConstants.TERMINATING_STATUSES.contains(previousState)) {
+                LOG.debug("Auth status already in terminal state: " + previousState + "." +
+                            " Skipping Futurae API call.");
                 StatusResponse statusResponse = new StatusResponse();
                 statusResponse.setStatus(StatusResponse.StatusEnum.fromValue(previousState));
                 statusResponse.setSessionKey(sessionKey);
@@ -53,14 +71,17 @@ public class ServerFuturaeAuthenticatorService {
 
             // Make an API call to get the authentication status from the Futurae server.
             AuthStateResponse authStateResponse = FuturaeAuthenticationAPIClient.getAuthenticationStatus(
-                    futuraeConfigurations.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName()),
-                    futuraeConfigurations.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName()),
-                    futuraeConfigurations.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName()),
+                    futuraeConfigurations,
                     futuraeAuthenticationProperties.get(FuturaeAuthenticatorConstants.FUTURAE_SESSION_ID),
                     authenticationContext.getLastAuthenticatedUser().getUserName());
 
             FuturaeAuthenticatorConstants.AuthenticationStatus resolvedStatus =
                     resolveAuthenticationStatus(authStateResponse.getResult());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Auth status from Futurae: " + authStateResponse.getResult() +
+                        " -> resolved to: " + resolvedStatus.getName());
+            }
 
             // Store the mapped internal status in the authentication context.
             authenticationContext.setProperty(FuturaeAuthenticatorConstants.AUTH_STATUS, resolvedStatus.getName());
@@ -88,6 +109,64 @@ public class ServerFuturaeAuthenticatorService {
 
         throw handleError(Response.Status.INTERNAL_SERVER_ERROR,
                 FuturaeAuthenticatorConstants.ErrorMessages.SERVER_ERROR_GENERAL);
+    }
+
+    private StatusResponse getEnrollmentStatus(AuthenticationContext authenticationContext,
+                                               Map<String, String> futuraeConfigurations, String sessionKey) {
+
+        String enrollmentId = String.valueOf(
+                authenticationContext.getProperty(FuturaeAuthenticatorConstants.FUTURAE_ENROLLMENT_ID));
+        String username = authenticationContext.getLastAuthenticatedUser().getUserName();
+        
+        if (StringUtils.isBlank(enrollmentId)) {
+            LOG.error("Enrollment ID not found in authentication context for session.");
+            throw handleError(Response.Status.INTERNAL_SERVER_ERROR,
+                    FuturaeAuthenticatorConstants.ErrorMessages.SERVER_ERROR_INVALID_AUTHENTICATION_PROPERTIES);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Checking enrollment status for enrollmentId: " + enrollmentId);
+        }
+
+        try {
+            EnrollStatusRequest enrollStatusRequest =
+                    EnrollStatusRequest.byUsername(username, enrollmentId);
+
+            EnrollStatusResponse enrollStatusResponse = FuturaeAuthenticationAPIClient.getEnrollmentStatus(
+                    futuraeConfigurations,
+                    enrollStatusRequest);
+
+            FuturaeAuthenticatorConstants.AuthenticationStatus resolvedStatus =
+                    resolveEnrollmentStatus(enrollStatusResponse.getResult());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Enrollment status from Futurae: " + enrollStatusResponse.getResult() +
+                        " -> resolved to: " + resolvedStatus.getName());
+            }
+
+            authenticationContext.setProperty(FuturaeAuthenticatorConstants.AUTH_STATUS, resolvedStatus.getName());
+            StatusResponse statusResponse = new StatusResponse();
+            statusResponse.setStatus(StatusResponse.StatusEnum.fromValue(resolvedStatus.getName()));
+            statusResponse.setSessionKey(sessionKey);
+            return statusResponse;
+
+        } catch (FuturaeAuthnFailedException e) {
+            LOG.error("Error while checking enrollment status from Futurae.", e);
+            throw handleError(Response.Status.INTERNAL_SERVER_ERROR,
+                    FuturaeAuthenticatorConstants.ErrorMessages.SERVER_ERROR_GENERAL);
+        }
+    }
+
+    private FuturaeAuthenticatorConstants.AuthenticationStatus resolveEnrollmentStatus(String futuraeResult) {
+
+        if (futuraeResult == null) {
+            return FuturaeAuthenticatorConstants.AuthenticationStatus.FAILED;
+        }
+        return switch (futuraeResult) {
+            case "success" -> FuturaeAuthenticatorConstants.AuthenticationStatus.ENROLLMENT_COMPLETED;
+            case "pending" -> FuturaeAuthenticatorConstants.AuthenticationStatus.PENDING_ENROLLMENT;
+            default -> FuturaeAuthenticatorConstants.AuthenticationStatus.FAILED;
+        };
     }
 
     /**
@@ -187,6 +266,7 @@ public class ServerFuturaeAuthenticatorService {
         return switch (futuraeResult) {
             case "allow" -> FuturaeAuthenticatorConstants.AuthenticationStatus.COMPLETED;
             case "waiting" -> FuturaeAuthenticatorConstants.AuthenticationStatus.PENDING;
+            case "deny" -> FuturaeAuthenticatorConstants.AuthenticationStatus.FUTURAE_LOGIN_DENIED;
             default -> FuturaeAuthenticatorConstants.AuthenticationStatus.FAILED;
         };
     }

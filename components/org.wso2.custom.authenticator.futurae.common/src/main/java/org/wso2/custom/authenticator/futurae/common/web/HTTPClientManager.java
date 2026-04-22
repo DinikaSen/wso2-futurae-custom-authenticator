@@ -35,7 +35,7 @@ public class HTTPClientManager {
         try {
             connectionManager = createPoolingConnectionManager();
         } catch (IOException e) {
-            throw handleServerException(FuturaeAuthenticatorConstants.ErrorMessages.SERVER_ERROR_CREATING_HTTP_CLIENT, e);
+            throw handleServerException(FuturaeAuthenticatorConstants.ErrorMessages.SERVER_ERROR_HTTP_CLIENT_CREATE, e);
         }
 
         RequestConfig config = createRequestConfig();
@@ -71,7 +71,7 @@ public class HTTPClientManager {
 
         if (isNull(httpClient)) {
             throw handleServerException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.SERVER_ERROR_GETTING_HTTP_CLIENT, null);
+                    FuturaeAuthenticatorConstants.ErrorMessages.SERVER_ERROR_HTTP_CLIENT_GET, null);
         }
         return httpClient;
     }

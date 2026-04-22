@@ -11,7 +11,6 @@ import static org.wso2.custom.authenticator.futurae.rest.common.Util.isCorrelati
  */
 public class ErrorResponse extends ErrorDTO {
 
-    // TODO: Figure out what this is
     private static final long serialVersionUID = -3502358623560083025L;
 
     /**

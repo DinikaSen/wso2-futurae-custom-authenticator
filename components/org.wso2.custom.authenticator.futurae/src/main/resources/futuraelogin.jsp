@@ -1,5 +1,5 @@
 <%--
-  ~ Copyright (c) 2023-2025, WSO2 LLC. (https://www.wso2.com).
+  ~ Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
   ~
   ~ WSO2 LLC. licenses this file to you under the Apache License,
   ~ Version 2.0 (the "License"); you may not use this file except
@@ -78,37 +78,35 @@
         <layout:component componentName="MainSection">
             <div class="ui segment">
                 <%-- page content --%>
-                <h2>Futurae Login</h2>
+                <h2><%=AuthenticationEndpointUtil.i18n(resourceBundle, "futurae.heading")%></h2>
                 <div class="ui divider hidden"></div>
                 <div class="ui visible negative message" style="display: none;" id="error-msg"></div>
 
                 <div class="segment-form">
-                    <form class="ui large form" id="loginForm" action="<%=commonauthURL%>" method="POST">
-                        <div class="ui fluid left icon input">
-                            <div class="ui fluid icon input addon-wrapper">
-                                <input type="text" id="username"  name="username" tabindex="1" placeholder="Username" aria-required="true">
-                                <i aria-hidden="true" class="user icon"></i>
-                            </div>
-                        </div>
-                        <input id="sessionDataKeyLoginForm" type="hidden" name="sessionDataKey"
-                            value='<%=Encode.forHtmlAttribute(request.getParameter("sessionDataKey"))%>' />
-                        <input id="authType" name="authType" type="hidden" value="futurae">
-                        <div class="ui divider hidden"></div>
-                        <div class="align-center buttons">
-                            <button type="button" class="ui primary large button" tabindex="4" role="button"
-                            onClick="loginFormOnSubmit();">
-                                <%=AuthenticationEndpointUtil.i18n(resourceBundle, "hypr.login.button")%>
-                            </button>
-                        </div>
-                    </form>
 
-                    <!-- Authentication on progress -->
-                    <div class="align-center" id="inProgressDisplay" >
+                    <!-- Authentication in progress -->
+                    <div class="align-center" id="inProgressDisplay" style="display:none;">
                         <h5 id="authenticationStatusMessage"></h5>
                     </div>
 
                     <!-- Proceed Authentication form -->
                     <form id="completeAuthenticationForm" action="<%=commonauthURL%>" method="POST">
+                        <input id="sessionDataKeyAuthenticationForm" type="hidden" name="sessionDataKey"
+                        value='<%=Encode.forHtmlAttribute(request.getParameter("sessionDataKey"))%>' />
+                        <input id="authType" name="authType" type="hidden" value="futurae">
+                    </form>
+
+                    <!-- Enrollment QR display -->
+                    <div class="align-center" id="enrollmentDisplay" style="display:none;">
+                        <p id="enrollmentMessage"></p>
+                        <img id="enrollmentQrCode" src="" alt="<%=AuthenticationEndpointUtil.i18n(resourceBundle, "futurae.enrollment.qr.alt")%>"
+                             style="max-width:250px; margin:16px auto; display:block;" />
+                        <div class="ui divider hidden"></div>
+                        <h5 id="enrollmentPollingStatus"></h5>
+                    </div>
+
+                    <!-- Proceed Enrollment form -->
+                    <form id="completeEnrollmentForm" action="<%=commonauthURL%>" method="POST">
                         <input id="sessionDataKeyAuthenticationForm" type="hidden" name="sessionDataKey"
                         value='<%=Encode.forHtmlAttribute(request.getParameter("sessionDataKey"))%>' />
                         <input id="authType" name="authType" type="hidden" value="futurae">
@@ -148,157 +146,114 @@
         String authHeader = new String(encoding, Charset.defaultCharset());
         String header = "Client " + authHeader;
         
-        // Handle error message with precedence for request parameter but fallback to generic message
-        String errorMessage = AuthenticationEndpointUtil.i18n(resourceBundle, "hypr.generic.error");
-        String error = request.getParameter("message");
-        
-        if (error != null && !error.equalsIgnoreCase(AuthenticationEndpointUtil.i18n(resourceBundle, error))) {
-            errorMessage = AuthenticationEndpointUtil.i18n(resourceBundle, error);
+        // Resolve error message via resource bundle using the status parameter as the lookup key.
+        // Keys follow the pattern "futurae.error.<STATUS>" (e.g. futurae.error.INVALID_USER).
+        // Falls back to the generic key when no status-specific entry exists.
+        String statusParam = request.getParameter("status");
+        String lookupKey = (statusParam != null && !statusParam.trim().isEmpty())
+                ? "futurae.error." + statusParam
+                : "futurae.error.generic";
+        String errorMessage = AuthenticationEndpointUtil.i18n(resourceBundle, lookupKey);
+        // If the key is not found, i18n returns the key itself — fall back to the generic message.
+        if (lookupKey.equals(errorMessage)) {
+            errorMessage = AuthenticationEndpointUtil.i18n(resourceBundle, "futurae.error.generic");
         }
+
     %>
 
     <script type="text/javascript">
-        var i = 0;
+        var i18n = {
+            authInProgress: "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "futurae.auth.in.progress")%>",
+            enrollScanInstructions: "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "futurae.enrollment.scan.instructions")%>",
+            enrollWaiting: "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "futurae.enrollment.waiting")%>",
+            errorTimeout: "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "futurae.error.timeout")%>",
+            errorStatusCheck: "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "futurae.error.status.check")%>"
+        };
+
         var sessionDataKey;
         var refreshInterval = 5000;
         var timeout = 90000;
         var intervalListener;
         var isPollingStopped = false;
-        var authStatusCheckApiWithQueryParams = "/api/futurae/v1/authentication/status/";
-        var GET = 'GET';
+        var authStatusCheckApi = "/api/futurae/v1/authentication/status/";
 
         $(document).ready(function () {
-
             var urlParams = new URLSearchParams(window.location.search);
             sessionDataKey = urlParams.get('sessionDataKey');
-            tenantDomain = urlParams.get('tenantDomain');
 
-            if (urlParams.has("status")){
-                var status = urlParams.get("status");
+            if (!urlParams.has('status')) return;
 
-                if(status == "PENDING") {
-                    document.getElementById("loginForm").style.display = 'none';
-                    document.getElementById("inProgressDisplay").style.display = 'block';
-                    document.getElementById("authenticationStatusMessage").innerText = "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "hypr.auth.status")%>";
-                    pollAuthStatus();
+            var status = urlParams.get('status');
 
-                } else if (status == 'CANCELED' || status == 'FAILED' || status == 'INVALID_REQUEST' || status == 'INVALID_TOKEN') {
-                    handleError('<%= Encode.forHtmlContent(errorMessage) %>');
-                } else if (status == 'INVALID_USER') {
-                    handleUserError('<%= Encode.forHtmlContent(errorMessage) %>');
-                }
+            if (status === 'PENDING') {
+                document.getElementById("inProgressDisplay").style.display = 'block';
+                document.getElementById("authenticationStatusMessage").innerText = i18n.authInProgress;
+                pollStatus(completeAuthentication);
+
+            } else if (status === 'PENDING_ENROLLMENT') {
+                var qrUrl = urlParams.get('enrollmentQrUrl');
+                document.getElementById("enrollmentDisplay").style.display = 'block';
+                document.getElementById("enrollmentMessage").innerText = i18n.enrollScanInstructions;
+                document.getElementById("enrollmentQrCode").src = qrUrl;
+                document.getElementById("enrollmentPollingStatus").innerText = i18n.enrollWaiting;
+                pollStatus(completeEnrollment);
+
+            } else if (status === 'FAILED' || status === 'FUTURAE_LOGIN_DENIED') {
+                handleError('<%= Encode.forHtmlContent(errorMessage) %>');
             }
         });
 
-        function loginFormOnSubmit() {
-            var username = document.getElementById("username").value;
-            var generic_error_message = "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "hypr.username.error")%>";
-            var invalid_email_error_message = "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "hypr.invalid.email")%>";
-
-            if(username == '') {
-                handleError(generic_error_message);
-                return;
-            }
-
-            if (username.length > 254) {
-                handleError(invalid_email_error_message);
-                return;
-            }
-            initiateAuthentication();
-        }
-
-        function pollAuthStatus() {
+        function pollStatus(onComplete) {
             var startTime = new Date().getTime();
 
             intervalListener = window.setInterval(function () {
-                if (isPollingStopped) {
-                    return;
-                } else {
-                    checkWaitStatus();
-                    i++;
-                }
-            }, refreshInterval);
+                if (isPollingStopped) return;
 
-            function checkWaitStatus() {
                 var now = new Date().getTime();
                 if ((startTime + timeout) < now) {
-                    handleAuthenticationTimedOut();
-                } else {
-                    $.ajax("<%= Encode.forJavaScriptBlock(identityServerEndpointContextParam)%>" + authStatusCheckApiWithQueryParams + sessionDataKey, {
-                    method: GET,
-                    headers: {
-                        "Authorization": "<%=header%>"
-                    },
+                    isPollingStopped = true;
+                    window.clearInterval(intervalListener);
+                    handleError(i18n.errorTimeout);
+                    return;
+                }
+
+                $.ajax("<%= Encode.forJavaScriptBlock(identityServerEndpointContextParam)%>" + authStatusCheckApi + sessionDataKey, {
+                    method: 'GET',
+                    headers: { "Authorization": "<%=header%>" },
                     success: function (res) {
-                        handleStatusResponse(res);
+                        if (["COMPLETED", "ENROLLMENT_COMPLETED", "FUTURAE_LOGIN_DENIED", "FAILED"].includes(res.status)) {
+                            if (!isPollingStopped) {
+                                isPollingStopped = true;
+                                window.clearInterval(intervalListener);
+                                onComplete();
+                            }
+                        }
                     },
-                    error: function (err) {
-                        handleAuthenticationFailed();
-                    },
-                    failure: function () {
-                        isPollingStopped = true;
-                        window.clearInterval(intervalListener);
+                    error: function () {
+                        if (!isPollingStopped) {
+                            isPollingStopped = true;
+                            window.clearInterval(intervalListener);
+                            handleError(i18n.errorStatusCheck);
+                        }
                     }
                 });
-                }
-
-            }
-
-            function handleStatusResponse(res) {
-                if (["COMPLETED", "CANCELED", "FAILED"].includes(res.status)) {
-                    completeAuthentication();
-                }
-            }
-
-           function handleAuthenticationTimedOut () {
-            if (!isPollingStopped) {
-                var error_message = "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "hypr.timeout.error")%>";
-                window.clearInterval(intervalListener);
-                handleError(error_message);
-            }
-           }
-
-           function handleAuthenticationFailed () {
-            if (!isPollingStopped) {
-                isPollingStopped = true;
-                var error_message = "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "hypr.generic.error")%>";
-                window.clearInterval(intervalListener);
-                handleError(error_message);
-            }
-           }
-        }
-
-        function handleError(msg){
-            var error_message = document.getElementById("error-msg");
-            document.getElementById("loginForm").style.display = 'block';
-            document.getElementById("inProgressDisplay").style.display = 'none';
-            error_message.innerHTML = msg;
-            error_message.style.display = "block";
-        }
-
-        function handleUserError(msg){
-            var error_message = document.getElementById("error-msg");
-            document.getElementById("inProgressDisplay").style.display = 'none';
-            document.getElementById("loginForm").style.display = 'none';
-            error_message.innerHTML = msg;
-            error_message.style.display = "block";
-        }
-
-        function initiateAuthentication() {
-            document.getElementById("error-msg").style.display = 'none';
-            document.getElementById("loginForm").style.display = 'none';
-            document.getElementById("inProgressDisplay").style.display = 'block';
-            document.getElementById("authenticationStatusMessage").innerText = "<%=AuthenticationEndpointUtil.i18n(resourceBundle, "hypr.auth.start")%>";
-            document.getElementById("loginForm").submit();
+            }, refreshInterval);
         }
 
         function completeAuthentication() {
-            if (!isPollingStopped) {
-                isPollingStopped = true;
-                console.log("Complete authentication request");
-                window.clearInterval(intervalListener);
-                document.getElementById("completeAuthenticationForm").submit();
-            }
+            document.getElementById("completeAuthenticationForm").submit();
+        }
+
+        function completeEnrollment() {
+            document.getElementById("completeEnrollmentForm").submit();
+        }
+
+        function handleError(msg) {
+            document.getElementById("inProgressDisplay").style.display = 'none';
+            document.getElementById("enrollmentDisplay").style.display = 'none';
+            var errorDiv = document.getElementById("error-msg");
+            errorDiv.innerHTML = msg;
+            errorDiv.style.display = "block";
         }
     </script>
 </body>

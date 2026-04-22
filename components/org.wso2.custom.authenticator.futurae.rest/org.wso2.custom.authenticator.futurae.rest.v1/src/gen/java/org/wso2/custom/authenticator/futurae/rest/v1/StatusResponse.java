@@ -40,7 +40,7 @@ public class StatusResponse  {
 @XmlEnum(String.class)
 public enum StatusEnum {
 
-    @XmlEnumValue("COMPLETED") COMPLETED(String.valueOf("COMPLETED")), @XmlEnumValue("PENDING") PENDING(String.valueOf("PENDING")), @XmlEnumValue("FAILED") FAILED(String.valueOf("FAILED"));
+    @XmlEnumValue("COMPLETED") COMPLETED(String.valueOf("COMPLETED")), @XmlEnumValue("ENROLLMENT_COMPLETED") ENROLLMENT_COMPLETED(String.valueOf("ENROLLMENT_COMPLETED")), @XmlEnumValue("PENDING") PENDING(String.valueOf("PENDING")), @XmlEnumValue("PENDING_ENROLLMENT") PENDING_ENROLLMENT(String.valueOf("PENDING_ENROLLMENT")), @XmlEnumValue("FAILED") FAILED(String.valueOf("FAILED"));
 
 
     private String value;

@@ -19,6 +19,7 @@ import java.lang.reflect.Type;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Map;
 
 import static org.wso2.custom.authenticator.futurae.common.util.FuturaeUtils.getFuturaeAuthnFailedException;
 
@@ -30,16 +31,19 @@ public class FuturaeAuthenticationAPIClient {
     /**
      * Call the Futurae server API to retrieve the available authentication options for the user.
      *
-     * @param serviceHostname
-     * @param serviceId
-     * @param username        The username provided by the user.
-     * @return response         A HTTPResponse object.
-     * @throws FuturaeAuthnFailedException Exception throws when there is an error occurred when retrieving the
-     *                                     registered devices via the api call
+     * @param futuraeConfig    Map containing serviceHostname, serviceId and authApiKey.
+     * @param username         The username provided by the user.
+     * @param futuraeCredential Optional trusted device token; pass blank string if not applicable.
+     * @return PreAuthResponse
+     * @throws FuturaeAuthnFailedException
      */
-    public static PreAuthResponse getAuthenticationOptions(String serviceHostname, String serviceId, String authApiKey,
+    public static PreAuthResponse getAuthenticationOptions(Map<String, String> futuraeConfig,
                                                            String username, String futuraeCredential)
             throws FuturaeAuthnFailedException {
+
+        String serviceHostname = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName());
+        String serviceId = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName());
+        String authApiKey = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName());
 
         try {
             URIBuilder uriBuilder = new URIBuilder()
@@ -60,36 +64,37 @@ public class FuturaeAuthenticationAPIClient {
             HttpResponse response = FuturaeWebUtils.httpPost(serviceId, authApiKey, uriBuilder.build(), jsonRequestBody);
 
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-
                 HttpEntity entity = response.getEntity();
                 String jsonString = EntityUtils.toString(entity);
-
                 return gson.fromJson(jsonString, PreAuthResponse.class);
-
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_API_TOKEN_INVALID_FAILURE);
+                        .API_TOKEN_INVALID);
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_INVALID_REQUEST_FAILURE);
+                        .API_INVALID_REQUEST);
             } else {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .AUTHENTICATION_FAILED_RETRIEVING_PRE_AUTH_FAILURE);
+                        .PREAUTH_RETRIEVAL_FAILURE);
             }
         } catch (URISyntaxException e) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_ENDPOINT_INVALID_SERVICE_URL_FAILURE, e);
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_INVALID_SERVICE_URL, e);
         } catch (IOException e) {
             throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                    .AUTHENTICATION_FAILED_RETRIEVING_PRE_AUTH_FAILURE, e);
+                    .PREAUTH_RETRIEVAL_FAILURE, e);
         } catch (FuturaeClientException e) {
             throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                    .SERVER_ERROR_CREATING_HTTP_CLIENT, e);
+                    .SERVER_ERROR_HTTP_CLIENT_CREATE, e);
         }
     }
 
-    public static AuthResponse sendAuthRequest(String serviceHostname, String serviceId, String authApiKey,
+    public static AuthResponse sendAuthRequest(Map<String, String> futuraeConfig,
                                                String username, String authFactor) throws FuturaeAuthnFailedException {
+
+        String serviceHostname = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName());
+        String serviceId = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName());
+        String authApiKey = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName());
 
         try {
             URIBuilder uriBuilder = new URIBuilder()
@@ -105,25 +110,22 @@ public class FuturaeAuthenticationAPIClient {
             HttpResponse response = FuturaeWebUtils.httpPost(serviceId, authApiKey, uriBuilder.build(), jsonRequestBody);
 
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-
                 HttpEntity entity = response.getEntity();
                 String jsonString = EntityUtils.toString(entity);
-
                 return gson.fromJson(jsonString, AuthResponse.class);
-
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_API_TOKEN_INVALID_FAILURE);
+                        .API_TOKEN_INVALID);
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_INVALID_REQUEST_FAILURE);
+                        .API_INVALID_REQUEST);
             } else {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                         .SERVER_ERROR_GENERAL);
             }
         } catch (URISyntaxException e) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_ENDPOINT_INVALID_SERVICE_URL_FAILURE, e);
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_INVALID_SERVICE_URL, e);
         } catch (IOException | FuturaeClientException e) {
             throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                     .SERVER_ERROR_GENERAL, e);
@@ -131,8 +133,12 @@ public class FuturaeAuthenticationAPIClient {
     }
 
     public static AuthStateResponse getAuthenticationStatus(
-            String serviceHostname, String serviceId, String authApiKey, String futuraeSessionId, String username)
+            Map<String, String> futuraeConfig, String futuraeSessionId, String username)
             throws FuturaeAuthnFailedException {
+
+        String serviceHostname = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName());
+        String serviceId = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName());
+        String authApiKey = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName());
 
         try {
             URIBuilder uriBuilder = new URIBuilder()
@@ -148,45 +154,42 @@ public class FuturaeAuthenticationAPIClient {
             HttpResponse response = FuturaeWebUtils.httpPost(serviceId, authApiKey, uriBuilder.build(), jsonRequestBody);
 
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-
                 HttpEntity entity = response.getEntity();
                 String jsonString = EntityUtils.toString(entity);
-
                 return gson.fromJson(jsonString, AuthStateResponse.class);
-
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_API_TOKEN_INVALID_FAILURE);
+                        .API_TOKEN_INVALID);
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_INVALID_SESSION_FAILURE);
+                        .API_INVALID_SESSION);
             } else {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                         .SERVER_ERROR_GENERAL);
             }
         } catch (URISyntaxException e) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_ENDPOINT_INVALID_SERVICE_URL_FAILURE, e);
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_INVALID_SERVICE_URL, e);
         } catch (IOException | FuturaeClientException e) {
             throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                     .SERVER_ERROR_GENERAL, e);
         }
-
     }
 
     /**
      * Look up a user by username via GET /srv/auth/v1/users.
      *
-     * @param serviceHostname The Futurae service hostname.
-     * @param serviceId       The Futurae service ID.
-     * @param authApiKey      The Futurae auth API key.
-     * @param username        The username to search for.
+     * @param futuraeConfig Map containing serviceHostname, serviceId and authApiKey.
+     * @param username      The username to search for.
      * @return UserSearchResponse if the user exists, or {@code null} if the user is not found (400).
      * @throws FuturaeAuthnFailedException on 401, network, or unexpected errors.
      */
-    public static UserSearchResponse lookupUserByUsername(
-            String serviceHostname, String serviceId, String authApiKey, String username)
+    public static UserSearchResponse lookupUserByUsername(Map<String, String> futuraeConfig, String username)
             throws FuturaeAuthnFailedException {
+
+        String serviceHostname = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName());
+        String serviceId = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName());
+        String authApiKey = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName());
 
         try {
             URIBuilder uriBuilder = new URIBuilder()
@@ -207,14 +210,14 @@ public class FuturaeAuthenticationAPIClient {
                 return null;
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_API_TOKEN_INVALID_FAILURE);
+                        .API_TOKEN_INVALID);
             } else {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                         .SERVER_ERROR_GENERAL);
             }
         } catch (URISyntaxException e) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_ENDPOINT_INVALID_SERVICE_URL_FAILURE, e);
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_INVALID_SERVICE_URL, e);
         } catch (IOException | FuturaeClientException e) {
             throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                     .SERVER_ERROR_GENERAL, e);
@@ -223,19 +226,19 @@ public class FuturaeAuthenticationAPIClient {
 
     /**
      * Unenroll (deactivate) a device for a user via POST /srv/auth/v1/user/unenroll.
-     * If the device is the user's only enrolled device, Futurae authentication is automatically
-     * disabled for that user.
      *
-     * @param serviceHostname The Futurae service hostname.
-     * @param serviceId       The Futurae service ID (used for HMAC auth).
-     * @param authApiKey      The Futurae auth API key.
+     * @param futuraeConfig   Map containing serviceHostname, serviceId and authApiKey.
      * @param unenrollRequest The unenroll request specifying the user and device to unenroll.
-     * @return UnenrollDeviceResponse containing the result ("success" or "success_2fa_disabled").
-     * @throws FuturaeAuthnFailedException on 400 (invalid request), 401 (bad token), or unexpected errors.
+     * @return UnenrollDeviceResponse containing the result.
+     * @throws FuturaeAuthnFailedException on 400, 401, or unexpected errors.
      */
-    public static UnenrollDeviceResponse unenrollDevice(String serviceHostname, String serviceId,
-                                                        String authApiKey, UnenrollDeviceRequest unenrollRequest)
+    public static UnenrollDeviceResponse unenrollDevice(Map<String, String> futuraeConfig,
+                                                        UnenrollDeviceRequest unenrollRequest)
             throws FuturaeAuthnFailedException {
+
+        String serviceHostname = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName());
+        String serviceId = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName());
+        String authApiKey = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName());
 
         try {
             URIBuilder uriBuilder = new URIBuilder()
@@ -254,17 +257,17 @@ public class FuturaeAuthenticationAPIClient {
                 return gson.fromJson(jsonString, UnenrollDeviceResponse.class);
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_API_TOKEN_INVALID_FAILURE);
+                        .API_TOKEN_INVALID);
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_INVALID_REQUEST_FAILURE);
+                        .API_INVALID_REQUEST);
             } else {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                         .SERVER_ERROR_GENERAL);
             }
         } catch (URISyntaxException e) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_ENDPOINT_INVALID_SERVICE_URL_FAILURE, e);
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_INVALID_SERVICE_URL, e);
         } catch (IOException | FuturaeClientException e) {
             throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                     .SERVER_ERROR_GENERAL, e);
@@ -272,19 +275,20 @@ public class FuturaeAuthenticationAPIClient {
     }
 
     /**
-     * Enroll a new device for an existing Futurae user via POST /srv/auth/v1/user/enroll.
-     * Returns an activation code and QR code for the user to scan with the Futurae mobile app.
+     * Enroll a device via POST /srv/auth/v1/user/enroll.
      *
-     * @param serviceHostname The Futurae service hostname.
-     * @param serviceId       The Futurae service ID (used for HMAC auth).
-     * @param authApiKey      The Futurae auth API key.
-     * @param enrollRequest   The enroll request built with {@link EnrollRequest#forExistingUser(String)}.
+     * @param futuraeConfig Map containing serviceHostname, serviceId and authApiKey.
+     * @param enrollRequest The enroll request built with {@link EnrollRequest#forExistingUser(String)}
+     *                      or {@link EnrollRequest#forNewUser()}.
      * @return EnrollResponse containing the activation code, QR code URL, and enrollment metadata.
-     * @throws FuturaeAuthnFailedException on 400 (invalid request), 401 (bad token), or unexpected errors.
+     * @throws FuturaeAuthnFailedException on 400, 401, or unexpected errors.
      */
-    public static EnrollResponse enrollDevice(String serviceHostname, String serviceId,
-                                              String authApiKey, EnrollRequest enrollRequest)
+    public static EnrollResponse enrollDevice(Map<String, String> futuraeConfig, EnrollRequest enrollRequest)
             throws FuturaeAuthnFailedException {
+
+        String serviceHostname = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName());
+        String serviceId = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName());
+        String authApiKey = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName());
 
         try {
             URIBuilder uriBuilder = new URIBuilder()
@@ -303,17 +307,107 @@ public class FuturaeAuthenticationAPIClient {
                 return gson.fromJson(jsonString, EnrollResponse.class);
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_API_TOKEN_INVALID_FAILURE);
+                        .API_TOKEN_INVALID);
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                        .FUTURAE_ENDPOINT_INVALID_REQUEST_FAILURE);
+                        .API_INVALID_REQUEST);
             } else {
                 throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                         .SERVER_ERROR_GENERAL);
             }
         } catch (URISyntaxException e) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_ENDPOINT_INVALID_SERVICE_URL_FAILURE, e);
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_INVALID_SERVICE_URL, e);
+        } catch (IOException | FuturaeClientException e) {
+            throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                    .SERVER_ERROR_GENERAL, e);
+        }
+    }
+
+    /**
+     * Retrieve the status and enrolled devices of a Futurae user via GET /srv/auth/v1/users/{id}.
+     *
+     * @param futuraeConfig Map containing serviceHostname, serviceId and authApiKey.
+     * @param futuraeUserId The Futurae user ID (UUID) of the user to look up.
+     * @return {@link UserInfoResponse} containing the user's status, allowed factors, and devices.
+     * @throws FuturaeAuthnFailedException on 400 (bad request), 401 (invalid credentials), or unexpected errors.
+     */
+    public static UserInfoResponse getUserInfo(Map<String, String> futuraeConfig, String futuraeUserId)
+            throws FuturaeAuthnFailedException {
+
+        String serviceHostname = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName());
+        String serviceId = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName());
+        String authApiKey = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName());
+
+        try {
+            URIBuilder uriBuilder = new URIBuilder()
+                    .setScheme("https")
+                    .setHost(serviceHostname)
+                    .setPath(FuturaeAuthenticatorConstants.FUTURAE_USER_PATH + "/" + futuraeUserId);
+
+            HttpResponse response = FuturaeWebUtils.httpGet(serviceId, authApiKey, uriBuilder.build());
+
+            Gson gson = new GsonBuilder().create();
+
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                HttpEntity entity = response.getEntity();
+                String jsonString = EntityUtils.toString(entity);
+                return gson.fromJson(jsonString, UserInfoResponse.class);
+            } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+                throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                        .API_INVALID_REQUEST);
+            } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+                throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                        .API_TOKEN_INVALID);
+            } else {
+                throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                        .SERVER_ERROR_GENERAL);
+            }
+        } catch (URISyntaxException e) {
+            throw getFuturaeAuthnFailedException(
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_INVALID_SERVICE_URL, e);
+        } catch (IOException | FuturaeClientException e) {
+            throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                    .SERVER_ERROR_GENERAL, e);
+        }
+    }
+
+    public static EnrollStatusResponse getEnrollmentStatus(Map<String, String> futuraeConfig,
+                                                           EnrollStatusRequest enrollStatusRequest)
+            throws FuturaeAuthnFailedException {
+
+        String serviceHostname = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_HOSTNAME.getName());
+        String serviceId = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.SERVICE_ID.getName());
+        String authApiKey = futuraeConfig.get(FuturaeAuthenticatorConstants.ConfigProperties.AUTH_API_KEY.getName());
+
+        try {
+            URIBuilder uriBuilder = new URIBuilder()
+                    .setScheme("https")
+                    .setHost(serviceHostname)
+                    .setPath(FuturaeAuthenticatorConstants.FUTURAE_DEVICE_ENROLL_STATUS_PATH);
+
+            Gson gson = new GsonBuilder().create();
+            String jsonRequestBody = gson.toJson(enrollStatusRequest);
+
+            HttpResponse response = FuturaeWebUtils.httpPost(serviceId, authApiKey, uriBuilder.build(), jsonRequestBody);
+
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                HttpEntity entity = response.getEntity();
+                String jsonString = EntityUtils.toString(entity);
+                return gson.fromJson(jsonString, EnrollStatusResponse.class);
+            } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+                throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                        .API_TOKEN_INVALID);
+            } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_BAD_REQUEST) {
+                throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                        .API_INVALID_REQUEST);
+            } else {
+                throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                        .SERVER_ERROR_GENERAL);
+            }
+        } catch (URISyntaxException e) {
+            throw getFuturaeAuthnFailedException(
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_INVALID_SERVICE_URL, e);
         } catch (IOException | FuturaeClientException e) {
             throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
                     .SERVER_ERROR_GENERAL, e);

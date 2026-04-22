@@ -1,8 +1,8 @@
 {
-    "id": "hypr-idp",
-    "name": "HYPR",
-    "description": "Enable login with Futurae.",
-    "docLink": "/guides/authentication/#manage-connections",
+    "id": "futurae-idp",
+    "name": "Futurae",
+    "description": "Enable MFA with Futurae.",
+    "docLink": "https://is.docs.wso2.com/en/latest/guides/authentication/configure-custom-connector/",
     "image": "assets/images/logos/futurae_logo.jpg",
     "category": "DEFAULT",
     "displayOrder": 6,
@@ -10,7 +10,7 @@
     "tags": [ "MFA" ],
     "idp": {
         "name": "Futurae",
-        "description": "",
+        "description": "Enable MFA with Futurae.",
         "image": "",
         "isPrimary": false,
         "isFederationHub": false,
@@ -41,9 +41,9 @@
                     "isEnabled": true,
                     "properties": [
                         {
-                            "key": "appId",
-                            "displayName": "Relying Party App ID",
-                            "description": "Enter application ID of the application registered in HYPR",
+                            "key": "serviceHostname",
+                            "displayName": "Service Hostname",
+                            "description": "Enter the service hostname of the Futurae server",
                             "type": "STRING",
                             "displayOrder": 1,
                             "regex": ".*",
@@ -54,9 +54,9 @@
                             "subProperties": []
                         },
                         {
-                            "key": "apiToken",
-                            "displayName": "API Token",
-                            "description": "Enter API token from HYPR",
+                            "key": "serviceId",
+                            "displayName": "Service ID",
+                            "description": "Enter the Service ID obtained from Futurae admin portal",
                             "type": "STRING",
                             "displayOrder": 3,
                             "regex": ".*",
@@ -67,9 +67,9 @@
                             "subProperties": []
                         },
                         {
-                            "key": "baseUrl",
-                            "displayName": "Base URL",
-                            "description": "Enter base URL",
+                            "key": "authApiKey",
+                            "displayName": "Auth API Key",
+                            "description": "Enter the Auth API Key obtained from Futurae admin portal",
                             "type": "STRING",
                             "displayOrder": 2,
                             "regex": ".*",
@@ -84,6 +84,6 @@
             ]
         }
     },
-    "type": "SOCIAL",
-    "templateId": "hypr-idp"
+    "type": "MFA",
+    "templateId": "futurae-idp"
 }

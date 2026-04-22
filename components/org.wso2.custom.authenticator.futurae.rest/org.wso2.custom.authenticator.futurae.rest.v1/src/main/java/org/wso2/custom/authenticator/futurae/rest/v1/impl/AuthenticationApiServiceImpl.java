@@ -18,18 +18,25 @@
 
 package org.wso2.custom.authenticator.futurae.rest.v1.impl;
 
-import org.wso2.custom.authenticator.futurae.rest.v1.*;
-import org.wso2.custom.authenticator.futurae.rest.v1.*;
-import java.util.List;
+import org.wso2.custom.authenticator.futurae.rest.v1.AuthenticationApiService;
+import org.wso2.custom.authenticator.futurae.rest.v1.StatusResponse;
+import org.wso2.custom.authenticator.futurae.rest.v1.core.ServerFuturaeAuthenticatorService;
 
 import javax.ws.rs.core.Response;
 
 public class AuthenticationApiServiceImpl implements AuthenticationApiService {
 
+    private final ServerFuturaeAuthenticatorService serverFuturaeAuthenticatorService;
+
+    public AuthenticationApiServiceImpl() {
+
+        serverFuturaeAuthenticatorService = new ServerFuturaeAuthenticatorService();
+    }
+
     @Override
     public Response getAuthenticationStatus(String sessionKey) {
 
-        // do some magic!
-        return Response.ok().entity("magic!").build();
+        StatusResponse statusResponse = serverFuturaeAuthenticatorService.getAuthenticationStatus(sessionKey);
+        return Response.ok().entity(statusResponse).build();
     }
 }

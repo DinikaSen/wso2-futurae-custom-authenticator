@@ -10,6 +10,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicHttpResponse;
+import org.wso2.custom.authenticator.futurae.common.constants.FuturaeAuthenticatorConstants;
 import org.wso2.custom.authenticator.futurae.common.exception.FuturaeClientException;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The HYPRWebUtils class contains all the general helper functions required by the HYPR Authenticator.
+ * The FuturaeWebUtils class contains all the general helper functions required by the Futurae Authenticator.
  */
 public class FuturaeWebUtils {
 
@@ -76,20 +77,24 @@ public class FuturaeWebUtils {
                 return toHttpResponse(response);
             }
         } catch (InvalidKeyException | NoSuchAlgorithmException e) {
-            // TODO : Fix error
-            throw new FuturaeClientException("Failed to generate HMAC", "Failed to generate HMAC");
+            throw new FuturaeClientException(
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_HMAC_SIGNING_FAILURE.getMessage(),
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_HMAC_SIGNING_FAILURE.getDescription(),
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_HMAC_SIGNING_FAILURE.getCode(),
+                    e);
         }
     }
 
     /**
      * Send an HTTP POST request.
      *
-     * @param apiKey    API token provided by HYPR.
+     * @param serviceId   Futurae service ID used for HMAC signing.
+     * @param apiKey      Auth API key provided by Futurae used for HMAC signing.
      * @param requestURL  The URL to which the POST request should be sent.
-     * @param requestBody A hashmap that includes the parameters to be sent through the request.
-     * @return httpResponse         The response received from the HTTP call.
-     * @throws IOException         Exception thrown when an error occurred during extracting the HTTP response content.
-     * @throws FuturaeClientException Exception thrown when an error occurred with the HTTP client connection.
+     * @param requestBody The JSON request body as a string.
+     * @return The HTTP response received from the server.
+     * @throws IOException            If an error occurred while executing the request or reading the response.
+     * @throws FuturaeClientException If the HMAC signature cannot be generated or the HTTP client is unavailable.
      */
     public static HttpResponse httpPost(String serviceId, String apiKey, URI requestURL, String requestBody)
             throws IOException, FuturaeClientException {
@@ -114,8 +119,11 @@ public class FuturaeWebUtils {
                 return toHttpResponse(response);
             }
         } catch (InvalidKeyException | NoSuchAlgorithmException e) {
-            // TODO : Fix error
-            throw new FuturaeClientException("Failed to generate HMAC", "Failed to generate HMAC");
+            throw new FuturaeClientException(
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_HMAC_SIGNING_FAILURE.getMessage(),
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_HMAC_SIGNING_FAILURE.getDescription(),
+                    FuturaeAuthenticatorConstants.ErrorMessages.API_HMAC_SIGNING_FAILURE.getCode(),
+                    e);
         }
     }
 
@@ -144,6 +152,7 @@ public class FuturaeWebUtils {
      * @param skey   Auth API key
      */
     private static Map<String, String> requestHeaders(String method, String host, String path, String params, String sid, String skey) throws InvalidKeyException, NoSuchAlgorithmException {
+
         params = (params == null) ? "" : params;
         String date = OffsetDateTime.now().format(rfc2822Formatter);
         String[] values = new String[]{date, method, host, path, params};
@@ -165,16 +174,17 @@ public class FuturaeWebUtils {
     }
 
     private static byte[] digest(String content, String skey) throws InvalidKeyException, NoSuchAlgorithmException {
+
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         Mac mac = Mac.getInstance("HMACSHA256");
         SecretKeySpec macKey = new SecretKeySpec(skey.getBytes(StandardCharsets.UTF_8), "RAW");
-
         mac.init(macKey);
 
         return mac.doFinal(contentBytes);
     }
 
     private static String bytesToHex(byte[] bytes) {
+
         final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
         char[] hexChars = new char[bytes.length * 2];
@@ -226,6 +236,4 @@ public class FuturaeWebUtils {
 
         return doSha256(String.valueOf(generateRandomPIN()));
     }
-
-
 }

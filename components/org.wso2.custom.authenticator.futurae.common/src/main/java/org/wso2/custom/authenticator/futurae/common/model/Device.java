@@ -13,6 +13,7 @@ public class Device {
     private String type;
     private String version;
     private boolean version_supported;
+    private boolean account_recovery_flow_binding_enabled;
     private String device_integrity;
     private long device_integrity_updated_at;
     private long enrolled_at;
@@ -43,6 +44,10 @@ public class Device {
 
     public boolean isVersion_supported() {
         return version_supported;
+    }
+
+    public boolean isAccount_recovery_flow_binding_enabled() {
+        return account_recovery_flow_binding_enabled;
     }
 
     public String getDevice_integrity() {

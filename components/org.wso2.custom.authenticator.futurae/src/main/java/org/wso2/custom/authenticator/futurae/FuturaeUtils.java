@@ -33,6 +33,13 @@ public class FuturaeUtils {
 
     private static final Log log = LogFactory.getLog(FuturaeUtils.class);
 
+    /**
+     * Retrieve the authenticated user from the subject attribute step in the authentication context.
+     *
+     * @param context AuthenticationContext.
+     * @return AuthenticatedUser from the subject attribute step.
+     * @throws FuturaeAuthnFailedException If no authenticated user is found or the username is blank.
+     */
     public static AuthenticatedUser getAuthenticatedUserFromContext(AuthenticationContext context)
             throws FuturaeAuthnFailedException {
 
@@ -44,17 +51,13 @@ public class FuturaeUtils {
                     AuthenticatedUser user = stepConfig.getAuthenticatedUser();
                     if (stepConfig.isSubjectAttributeStep()) {
                         if (user == null) {
-                            throw new FuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages.
-                                    USER_NOT_FOUND.getCode(),
-                                    FuturaeAuthenticatorConstants.ErrorMessages.USER_NOT_FOUND.getMessage());
+                            throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                                    .USER_NOT_FOUND);
                         }
                         if (StringUtils.isBlank(user.toFullQualifiedUsername())) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Username cannot be empty.");
-                            }
-                            throw new FuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages.
-                                    USER_NOT_FOUND.getCode(),
-                                    FuturaeAuthenticatorConstants.ErrorMessages.USER_NOT_FOUND.getMessage());
+                            log.debug("Username cannot be empty.");
+                            throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                                    .USER_NOT_FOUND);
                         }
                         return user;
                     }
@@ -63,7 +66,7 @@ public class FuturaeUtils {
         }
         // If authenticated user cannot be found from the previous steps.
         throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
-                .NO_AUTHENTICATED_USER_FOUND_FROM_PREVIOUS_STEP);
+                .AUTHENTICATED_USER_NOT_FOUND);
     }
 
     /**
@@ -86,9 +89,8 @@ public class FuturaeUtils {
         // If the user is federated, we need to check whether the user is already provisioned to the organization.
         String federatedUsername = FederatedAuthenticatorUtil.getLoggedInFederatedUser(context);
         if (StringUtils.isBlank(federatedUsername)) {
-            throw new AuthenticationFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.ERROR_CODE_NO_AUTHENTICATED_USER.getCode(),
-                    FuturaeAuthenticatorConstants.ErrorMessages.ERROR_CODE_NO_FEDERATED_USER.getMessage());
+            throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages
+                    .FEDERATED_USER_NOT_FOUND);
         }
         String associatedLocalUsername =
                 FederatedAuthenticatorUtil.getLocalUsernameAssociatedWithFederatedUser(MultitenantUtils.
@@ -99,6 +101,23 @@ public class FuturaeUtils {
         return null;
     }
 
+    /**
+     * Resolve the authenticating user for the current step. For local users the authenticated user from context is
+     * returned as-is. For federated users, JIT provisioning must be enabled; on the initial federation attempt the
+     * federated user is returned directly, and on subsequent attempts an {@link AuthenticatedUser} is built from the
+     * mapped local username and provisioned user-store domain.
+     *
+     * @param context                      AuthenticationContext.
+     * @param authenticatedUserInContext   Authenticated user obtained from the authentication context.
+     * @param mappedLocalUsername          Local username mapped from the federated user, or {@code null} if not yet
+     *                                     provisioned.
+     * @param tenantDomain                 Tenant domain of the authenticating user.
+     * @param isInitialFederationAttempt   {@code true} if this is the first authentication attempt for the federated
+     *                                     user (i.e. the user has not yet been provisioned locally).
+     * @return Resolved {@link AuthenticatedUser} for this authentication step.
+     * @throws AuthenticationFailedException If JIT provisioning is not enabled or the federated authenticator is
+     *                                       invalid.
+     */
     public static AuthenticatedUser resolveAuthenticatingUser(AuthenticationContext context,
                                                         AuthenticatedUser authenticatedUserInContext,
                                                         String mappedLocalUsername,
@@ -111,10 +130,8 @@ public class FuturaeUtils {
         }
 
         if (!isJitProvisioningEnabled(authenticatedUserInContext, tenantDomain)) {
-            throw new AuthenticationFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.ERROR_CODE_INVALID_FEDERATED_USER_AUTHENTICATION.
-                            getCode(), FuturaeAuthenticatorConstants.ErrorMessages
-                    .ERROR_CODE_INVALID_FEDERATED_USER_AUTHENTICATION.getMessage());
+            throw getFuturaeAuthnFailedException(
+                    FuturaeAuthenticatorConstants.ErrorMessages.FEDERATED_USER_JIT_DISABLED);
         }
 
         // This is a federated initial authentication scenario.
@@ -153,11 +170,11 @@ public class FuturaeUtils {
             }
         } catch (UserStoreException e) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.RETRIEVING_USER_STORE_FAILURE);
+                    FuturaeAuthenticatorConstants.ErrorMessages.USER_STORE_RETRIEVAL_FAILURE, e);
         }
         if (userRealm == null) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.RETRIEVING_USER_REALM_FAILURE);
+                    FuturaeAuthenticatorConstants.ErrorMessages.USER_REALM_RETRIEVAL_FAILURE);
         }
         return userRealm;
     }
@@ -177,7 +194,7 @@ public class FuturaeUtils {
             return userRealm.getUserStoreManager();
         } catch (UserStoreException e) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.RETRIEVING_REG_USER_FAILURE, e);
+                    FuturaeAuthenticatorConstants.ErrorMessages.REGISTERED_USER_RETRIEVAL_FAILURE, e);
         }
     }
 
@@ -198,10 +215,19 @@ public class FuturaeUtils {
                             authenticatedUser.toFullQualifiedUsername()), new String[]{claimUrl}, null);
             return claimValues.get(claimUrl);
         } catch (UserStoreException e) {
-            throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages.USER_NOT_FOUND, e);
+            throw getFuturaeAuthnFailedException(FuturaeAuthenticatorConstants.ErrorMessages.CLAIM_RETRIEVAL_FAILURE, e);
         }
     }
 
+    /**
+     * Set a user claim value in the user store for the given authenticated user.
+     *
+     * @param authenticatedUser AuthenticatedUser whose claim is to be updated.
+     * @param claimUrl          Claim URI.
+     * @param claimValue        Value to set for the claim.
+     * @throws AuthenticationFailedException If the user store manager cannot be obtained or the user is not found.
+     * @throws UserStoreException            If an error occurs while setting the claim value.
+     */
     public static void setClaimValue(AuthenticatedUser authenticatedUser, String claimUrl, String claimValue)
             throws AuthenticationFailedException, UserStoreException {
 
@@ -218,8 +244,15 @@ public class FuturaeUtils {
         }
     }
 
-
-
+    /**
+     * Resolve the WSO2 user ID for the given authenticated user.
+     *
+     * @param authenticatingUser AuthenticatedUser whose ID is to be resolved.
+     * @return User ID string, or {@code null} if the claim is not set for a federated user.
+     * @throws AuthenticationFailedException If the user store manager cannot be obtained.
+     * @throws UserStoreException            If an error occurs while reading claims from the user store.
+     * @throws UserIdNotFoundException       If the user ID cannot be found for a local user.
+     */
     public static String resolveUserId(AuthenticatedUser authenticatingUser) throws AuthenticationFailedException,
             UserStoreException, UserIdNotFoundException {
 
@@ -234,6 +267,15 @@ public class FuturaeUtils {
         return authenticatingUser.getUserId();
     }
 
+    /**
+     * Build an {@link Property} instance from a {@link FuturaeAuthenticatorConstants.ConfigProperties} enum value.
+     * The property is marked as required and its name, display name, description, and display order are populated
+     * from the enum constant.
+     *
+     * @param configProperties Enum constant describing the authenticator configuration property.
+     * @return Populated {@link Property} ready to be returned from
+     *         {@link org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator#getConfigurationProperties()}.
+     */
     public static Property getProperty(FuturaeAuthenticatorConstants.ConfigProperties configProperties) {
 
         Property property = new Property();
@@ -245,31 +287,40 @@ public class FuturaeUtils {
         return property;
     }
 
-    public static void validateFuturaeConfiguration(String serviceHostname, String serviceId, String authApiKey,
-                                                    String adminApiKey) throws FuturaeAuthnFailedException {
+    /**
+     * Validate the mandatory Futurae authenticator configuration parameters. Throws a
+     * {@link FuturaeAuthnFailedException} with a specific error code if any value is blank.
+     *
+     * @param serviceHostname Futurae service hostname.
+     * @param serviceId       Futurae service ID.
+     * @param authApiKey      Futurae authentication API key.
+     * @throws FuturaeAuthnFailedException If any of the required configuration values is blank.
+     */
+    public static void validateFuturaeConfiguration(String serviceHostname, String serviceId, String authApiKey) throws FuturaeAuthnFailedException {
 
-        // TODO : Add further validations
         if (StringUtils.isBlank(serviceHostname)) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_SERVICE_HOSTNAME_INVALID_FAILURE);
+                    FuturaeAuthenticatorConstants.ErrorMessages.CONFIG_HOSTNAME_INVALID);
         }
 
         if (StringUtils.isBlank(serviceId)) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_SERVICE_ID_INVALID_FAILURE);
+                    FuturaeAuthenticatorConstants.ErrorMessages.CONFIG_SERVICE_ID_INVALID);
         }
 
         if (StringUtils.isBlank(authApiKey)) {
             throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_AUTH_API_KEY_INVALID_FAILURE);
-        }
-
-        if (StringUtils.isBlank(adminApiKey)) {
-            throw getFuturaeAuthnFailedException(
-                    FuturaeAuthenticatorConstants.ErrorMessages.FUTURAE_AUTH_API_KEY_INVALID_FAILURE);
+                    FuturaeAuthenticatorConstants.ErrorMessages.CONFIG_AUTH_API_KEY_INVALID);
         }
     }
 
+    /**
+     * Return a masked version of the username when log masking is enabled, or the plain username otherwise.
+     * Use this method whenever logging a username to avoid exposing PII in log files.
+     *
+     * @param username Username to mask.
+     * @return Masked username if log masking is enabled; otherwise the original username.
+     */
     public static String getMaskedUsername(String username) {
 
         if (LoggerUtils.isLogMaskingEnable) {
@@ -278,6 +329,15 @@ public class FuturaeUtils {
         return username;
     }
 
+    /**
+     * Check whether Just-In-Time (JIT) provisioning is enabled for the identity provider associated with the given
+     * federated user.
+     *
+     * @param user         Federated {@link AuthenticatedUser}.
+     * @param tenantDomain Tenant domain in which to look up the identity provider.
+     * @return {@code true} if JIT provisioning is enabled for the user's IdP; {@code false} otherwise.
+     * @throws AuthenticationFailedException If the identity provider cannot be retrieved.
+     */
     public static boolean isJitProvisioningEnabled(AuthenticatedUser user, String tenantDomain)
             throws AuthenticationFailedException {
 
@@ -285,15 +345,21 @@ public class FuturaeUtils {
         IdentityProvider idp = getIdentityProvider(federatedIdp, tenantDomain);
         JustInTimeProvisioningConfig provisioningConfig = idp.getJustInTimeProvisioningConfig();
         if (provisioningConfig == null) {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("No JIT provisioning configs for idp: %s in tenant: %s", federatedIdp,
-                        tenantDomain));
-            }
+            log.debug(String.format("No JIT provisioning configs for idp: %s in tenant: %s", federatedIdp,
+                    tenantDomain));
             return false;
         }
         return provisioningConfig.isProvisioningEnabled();
     }
 
+    /**
+     * Retrieve the {@link IdentityProvider} by name for the given tenant domain.
+     *
+     * @param idpName      Name of the identity provider.
+     * @param tenantDomain Tenant domain in which to look up the identity provider.
+     * @return The matching {@link IdentityProvider}.
+     * @throws AuthenticationFailedException If the identity provider is not found or cannot be retrieved.
+     */
     public static IdentityProvider getIdentityProvider(String idpName, String tenantDomain) throws
             AuthenticationFailedException {
 
@@ -302,23 +368,33 @@ public class FuturaeUtils {
             if (idp == null) {
                 throw new AuthenticationFailedException(
                         String.format(
-                                FuturaeAuthenticatorConstants.ErrorMessages.ERROR_CODE_INVALID_FEDERATED_AUTHENTICATOR
+                                FuturaeAuthenticatorConstants.ErrorMessages.FEDERATED_AUTHENTICATOR_NOT_FOUND
                                         .getMessage(), idpName, tenantDomain));
             }
             return idp;
         } catch (IdentityProviderManagementException e) {
             throw new AuthenticationFailedException(String.format(
-                    FuturaeAuthenticatorConstants.ErrorMessages.ERROR_CODE_INVALID_FEDERATED_AUTHENTICATOR.getMessage(),
+                    FuturaeAuthenticatorConstants.ErrorMessages.FEDERATED_AUTHENTICATOR_NOT_FOUND.getMessage(),
                     idpName, tenantDomain));
         }
     }
 
+    /**
+     * Retrieve the user-store domain configured for JIT provisioning on the identity provider associated with the
+     * given federated user.
+     *
+     * @param user         Federated {@link AuthenticatedUser}.
+     * @param tenantDomain Tenant domain in which to look up the identity provider.
+     * @return The provisioning user-store domain, or {@code null} if no JIT provisioning config is present.
+     * @throws AuthenticationFailedException If the identity provider cannot be retrieved.
+     */
     public static String getFederatedUserStoreDomain(AuthenticatedUser user, String tenantDomain)
             throws AuthenticationFailedException {
 
         String federatedIdp = user.getFederatedIdPName();
         IdentityProvider idp = getIdentityProvider(federatedIdp, tenantDomain);
         JustInTimeProvisioningConfig provisioningConfig = idp.getJustInTimeProvisioningConfig();
+
         if (provisioningConfig == null) {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("No JIT provisioning configs for idp: %s in tenant: %s", federatedIdp,
@@ -333,6 +409,4 @@ public class FuturaeUtils {
         }
         return provisionedUserStore;
     }
-
-
 }

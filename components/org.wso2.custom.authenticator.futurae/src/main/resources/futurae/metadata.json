@@ -3,7 +3,7 @@
         "image": "assets/images/logos/futurae_logo.jpg",
         "header": "Futurae",
         "Subheading": "Enable MFA with Futurae.",
-        "documentation": "{ENV}/asgardeo/docs/guides/authentication/#manage-connections",
+        "documentation": "https://is.docs.wso2.com/en/latest/guides/authentication/configure-custom-connector/",
         "modal": {
             "form": {
                 "fields": [
@@ -63,21 +63,6 @@
                         "maxLength": "100",
                         "minLength": "3",
                         "width": "13"
-                    },
-                    {
-                      "index": 4,
-                      "className": "addon-field-wrapper",
-                      "ariaLabel": "Futurae Admin API Token",
-                      "type": "password",
-                      "name": "adminApiToken",
-                      "label": "Futurae Admin API Token",
-                      "placeholder": "Enter Admin API token from Futurae",
-                      "required": true,
-                      "autoComplete": false,
-                      "testId": "futurae-idp-create-wizard-page-idp-admin-api-token",
-                      "maxLength": "100",
-                      "minLength": "3",
-                      "width": "13"
                     }
                 ]
                 
@@ -105,10 +90,6 @@
                     {
                         "fieldName": "Auth API Key",
                         "hint": "Provide the <Code class=\"inline-code\">API Token</Code> obtained from Futurae. This will be used to access Futurae's authentication APIs."
-                    },
-                    {
-                      "fieldName": "Admin API Key",
-                      "hint": "Provide the <Code class=\"inline-code\">Admin API Key</Code> obtained from Futurae. This will be used to access Futurae's admin APIs."
                     }
                 ]
             }
@@ -125,10 +106,6 @@
             {
                 "key": "authApiKey",
                 "value": ""
-            },
-            {
-              "key": "adminApiKey",
-              "value": ""
             }
         ]
     },
@@ -231,17 +208,6 @@
                     "type": "password",
                     "hint": "Enter the Auth API Key obtained from Futurae admin portal.",
                     "validation": false
-                },
-                {
-                  "index": 3,
-                  "displayOrder" : 8,
-                  "label": "Admin API Key",
-                  "data-testid": "idp-edit-page-authenticator-settings-FuturaeAuthenticator-content-form-adminKey",
-                  "name": "adminApiKey",
-                  "required": true,
-                  "type": "password",
-                  "hint": "Enter the Admin API Key obtained from Futurae admin portal.",
-                  "validation": false
                 }
             ],
             "quickStart": "futurae"
