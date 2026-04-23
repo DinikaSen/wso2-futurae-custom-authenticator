@@ -6,8 +6,8 @@ To test the authentication flow, the user must have an account in Futurae and mu
 
 ## Prerequisites
 
-- A running WSO2 Identity Server instance (7.0 or above recommended).
-- A configured Futurae service with at least one application. Obtain the following from the Futurae Admin Portal:
+- A running WSO2 Identity Server instance (IS 7.1 or above).
+- A configured Futurae service. Obtain the following from the Futurae Admin Portal:
   - **Service Hostname** — the hostname of the Futurae service (e.g. `api.futurae.com`).
   - **Service ID** — the unique ID of your Futurae service.
   - **Auth API Key** — the authentication API key for your Futurae service.
@@ -25,21 +25,15 @@ To test the authentication flow, the user must have an account in Futurae and mu
 
 **Step 2: Deploy the Futurae Authenticator**
 
-1. Navigate to `components/org.wso2.custom.authenticator.futurae/target`.
-2. Copy the `org.wso2.custom.authenticator.futurae-1.0-SNAPSHOT.jar` file.
-3. Navigate to `<IS_HOME>/repository/components/dropins` and paste the `.jar` file.
-4. Navigate to `components/org.wso2.custom.authenticator.futurae.common/target`.
-5. Copy the `org.wso2.custom.authenticator.futurae.common-1.0-SNAPSHOT.jar` file.
-6. Navigate to `<IS_HOME>/repository/components/lib` and paste the `.jar` file.
-7. Navigate to `components/org.wso2.custom.authenticator.futurae/src/main/resources` and copy the `futurae` directory.
-8. Paste it into `<IS_HOME>/repository/resources/identity/extensions/connections`.
+1. Navigate to `components/org.wso2.custom.authenticator.futurae/target` >> Copy the `org.wso2.custom.authenticator.futurae-1.0-SNAPSHOT.jar` file >> Navigate to `<IS_HOME>/repository/components/dropins` and paste the `.jar` file.
+2. Navigate to `components/org.wso2.custom.authenticator.futurae.common/target` >> Copy the `org.wso2.custom.authenticator.futurae.common-1.0-SNAPSHOT.jar` file >> Navigate to `<IS_HOME>/repository/components/lib` and paste the `.jar` file.
+3. Navigate to `components/org.wso2.custom.authenticator.futurae/src/main/resources` and copy the `futurae` directory >> Paste it into `<IS_HOME>/repository/resources/identity/extensions/connections`.
+4. From the same `src/main/resources` directory, copy `futurae_logo.jpg` >> Paste it into `<IS_HOME>/repository/deployment/server/webapps/console/resources/connections/assets/images`.
 
 **Step 3: Deploy the Futurae REST API**
 
-1. Navigate to `components/org.wso2.custom.authenticator.futurae.rest/org.wso2.custom.authenticator.futurae.rest.dispatcher/target`.
-2. Copy the `api#futurae.war` file.
-3. Navigate to `<IS_HOME>/repository/deployment/server/webapps` and paste the `.war` file.
-4. Open `<IS_HOME>/repository/conf/deployment.toml` and add the following configuration:
+1. Navigate to `components/org.wso2.custom.authenticator.futurae.rest/org.wso2.custom.authenticator.futurae.rest.dispatcher/target` >> Copy the `api#futurae.war` file >> Navigate to `<IS_HOME>/repository/deployment/server/webapps` and paste the `.war` file.
+2. Open `<IS_HOME>/repository/conf/deployment.toml` and add the following configuration:
    ```toml
    [[resource.access_control]]
     context = "(.*)/api/futurae/v1/authentication/status/(.*)"
@@ -51,13 +45,12 @@ To test the authentication flow, the user must have an account in Futurae and mu
     enable_tenanted_sessions = "true"
     rewrite.custom_webapps=["/api/futurae/"]
    ```
-   This allows the login page to poll the authentication status endpoint without requiring a session token.
+   This allows the login page to poll the authentication status.
 
 **Step 4: Deploy the login page**
 
-1. Navigate to `components/org.wso2.custom.authenticator.futurae/src/main/resources`.
-2. Copy the `futuraelogin.jsp` file.
-3. Paste it into `<IS_HOME>/repository/deployment/server/webapps/authenticationendpoint`.
+1. Navigate to `components/org.wso2.custom.authenticator.futurae/src/main/resources` >> Copy the `futuraelogin.jsp` file.
+2. Paste it into `<IS_HOME>/repository/deployment/server/webapps/authenticationendpoint`.
 
 **Step 5: Add i18n resource bundle entries**
 
@@ -72,14 +65,27 @@ The authenticator uses custom i18n keys for its login page. These must be merged
    ```
    <IS_HOME>/repository/deployment/server/webapps/authenticationendpoint/WEB-INF/classes/org/wso2/carbon/identity/application/authentication/endpoint/i18n/Resources_de_DE.properties
    ```
+4. Similarly, add translations for other languages if needed. 
 
-**Step 6: Add the Futurae User ID claim**
+**Step 6: (Optional) Enable debug logs**
+
+To enable debug logs for the Futurae connector, add the following to `<IS_HOME>/repository/conf/log4j2.properties`:
+
+```properties
+logger.org-wso2-custom-authenticator-futurae.name=org.wso2.custom.authenticator.futurae
+logger.org-wso2-custom-authenticator-futurae.level=DEBUG
+```
+
+Then append `org-wso2-custom-authenticator-futurae` to the end of the line starting with `loggers =` in the same file.
+
+**Step 7: Restart WSO2 Identity Server**
+
+**Step 8: Add the Futurae User ID claim**
 
 The authenticator stores the Futurae user ID against the WSO2 user profile using a custom claim. Create this claim in the WSO2 IS Console before testing:
 
 - **Claim URI:** `http://wso2.org/claims/futuraeUserId`
 - **Display Name:** Futurae User ID
-- **Mapped Attribute:** Choose an appropriate LDAP/AD attribute (e.g. `futuraeUserId`).
 
 ## Configuring the Futurae Connection in WSO2 IS Console
 
@@ -100,23 +106,8 @@ api.futurae.com
 ### Service ID
 The Service ID of your Futurae service, available in the Futurae Admin Portal.
 
-Example:
-```
-<your-futurae-service-id>
-```
-
 ### Auth API Key
 The Auth API Key for your Futurae service. This key is used to sign API requests to Futurae via HMAC-SHA256.
-
-Example:
-```
-<your-futurae-auth-api-key>
-```
-
-Follow these steps to obtain the Auth API Key from the Futurae Admin Portal:
-1. Log in to the Futurae Admin Portal.
-2. Navigate to your service and open **Settings**.
-3. Under **API Keys**, locate or generate the **Auth API Key**.
 
 ## The Futurae Authentication Flow
 
